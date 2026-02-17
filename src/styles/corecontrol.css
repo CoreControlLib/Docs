@@ -1,0 +1,117 @@
+/*--- Fonts ---*/
+
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400..800&display=swap');
+
+:root {
+    --sl-font-family-body: 'Figtree', sans-serif;
+    --sl-font-family-heading: 'Figtree', sans-serif;
+    --sl-font-family-mono: 'JetBrains Mono', monospace;
+}
+
+
+
+/*--- Color Themes ---*/
+
+[data-theme="light"] {
+    --sl-color-bg: #ffffff;
+    --sl-color-text: #111111;
+    --text-highlight: #ff2964;
+
+    --sl-color-accent-low: #ffffff;
+    --sl-color-accent: #e53969;
+    --sl-color-accent-high: #3b3b3b;
+}
+
+[data-theme="dark"] {
+    --sl-color-bg-dark: #000000;
+    --sl-color-text-dark: #eeeeee;
+    --text-highlight: #ffffff;
+
+    --sl-color-accent-low: #3b3b3b;
+    --sl-color-accent: #e53969;
+    --sl-color-accent-high: #ffffff;
+}
+
+
+
+/*--- Background Hero Images ---*/
+
+html[data-has-hero] body {
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+html[data-has-hero][data-theme="dark"] body::after {
+    content: "";
+    position: fixed;
+    bottom: 0;
+    right: 0;
+
+    width: 140%;
+    height: 120vh;
+    background: radial-gradient(
+            ellipse 90% 50% at bottom right,
+            rgb(255, 0, 89, 0.20),
+            transparent 100%
+    );
+
+    pointer-events: none;
+    z-index: -1;
+}
+
+html[data-has-hero][data-theme="light"] body {
+    background-image: url('/backgroundLight.svg') !important;
+}
+
+html[data-has-hero][data-theme="dark"] body {
+    background-image: url('/backgroundDark.svg') !important;
+}
+
+
+
+/*--- Fixes ---*/
+
+.social-links a {
+    color: var(--sl-color-gray-4);
+}
+.social-links a:hover {
+    color: var(--sl-color-gray-1);
+}
+
+[data-theme="dark"] .social-links a {
+    color: var(--sl-color-gray-5);
+}
+[data-theme="dark"] .social-links a:hover {
+    color: var(--sl-color-gray-4);
+}
+
+[data-theme="dark"] .theme-select button[aria-pressed="true"] {
+    color: var(--sl-color-gray-5);
+}
+
+[data-theme="dark"] starlight-theme-select select {
+    background-color: var(--sl-color-bg-nav);
+    color: var(--sl-color-text);
+    color-scheme: dark;
+}
+
+[data-theme="dark"] starlight-theme-select option {
+    background-color: var(--sl-color-bg-nav);
+    color: var(--sl-color-text);
+}
+
+
+/*--- Card Icons ---*/
+
+[data-theme="light"] .card .icon {
+    color: #ffffff;
+    background-color: #ff92ad;
+    border-color: var(--sl-color-accent);
+}
+[data-theme="dark"] .card .icon {
+    color: #ffffff;
+    background-color: #691f3b;
+    border-color: var(--sl-color-accent);
+}

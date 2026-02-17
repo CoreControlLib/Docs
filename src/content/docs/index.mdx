@@ -1,0 +1,201 @@
+---
+title: Bring the change now.
+template: splash
+hero:
+    tagline: The modern way to control your FIRST Tech Challenge robot.
+         Because you should write algorithms. Not boilerplate.
+    image:
+        alt: The CoreControl Hero Image
+        light: /src/assets/heroLight.svg
+        dark: /src/assets/heroDark.svg
+    actions:
+        - text: V1.1.0.1 Docs
+          link: /guides/example/
+          icon: right-arrow
+        - text: Get the Quickstart Repo
+          link: https://github.com/CoreControlLib/CoreControlQuickstart
+          icon: external
+          variant: minimal
+---
+
+import {Card, CardGrid, LinkButton} from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+
+export const gradleCode = `
+apply from: '../build.common.gradle'
+apply from: '../build.dependencies.gradle'
+android {
+    namespace = 'org.firstinspires.ftc.teamcode'
+    packagingOptions {
+        jniLibs.useLegacyPackaging true
+    }
+}
++repositories {
++    maven {
++        url "https://corecontrollib.github.io/Release/"
++    }
++}
+dependencies {
+    implementation project(':FtcRobotController')
++    implementation 'com.andreidurlea:corecontrol:1.1.0'
+}
+`;
+export const exampleCode = `
+package org.firstinspires.ftc.teamcode;
+import ...
+public class MyOpMode extends CoreTeleOp {
+    public MyOpMode() {
+        super(
+            // Register your own modules!
+            Intake.INSTANCE,
+            Chassis.INSTANCE,
+            Spindexer.INSTANCE,
+            Outtake.INSTANCE,
+            true // display automatic telemetry
+                 // about them!
+        );
+    }
+
+    // Smart buttons!
+    Button collect
+        = new Button( () -> gamepad1.square );
+    Button shoot
+        = new Button( () -> gamepad1.circle );
+
+    // Modules are already initialized automatically!
+    @Override public void onInit() {
+        Outtake.INSTANCE.goToHome.register();
+    }
+
+    // Modules' loop logic is run automatically!
+    @Override public void onMainLoop() {
+        if (collect.wasPressed() && shoot.isNotHeld())
+            collectAndLoad.register();
+
+        if (shoot.wasPressed())
+            if (shoot.wasDoublePressed())
+                shootAndReload.repeat(3).register();
+            else
+                shootAndReload.register();
+    }
+}
+`;
+export const exampleCommandsCode = `
+SequentialCommandGroup collectAndLoad
+    = sequentially(
+        Spindexer.INSTANCE.reset,
+        wait(500),
+        racing(
+            Intake.INSTANCE.absorb,
+            waitUntil(() -> Intake.INSTANCE.isFull())
+        ),
+        Spindexer.INSTANCE.loadToOuttake
+    );
+SequentialCommandGroup shootAndReload
+    = sequentially(
+        Outtake.INSTANCE.shoot,
+        Spindexer.INSTANCE.loadToOuttake
+    );
+`
+export const exampleRedAutoCode = `
+package org.firstinspires.ftc.teamcode;
+import ...
+public class RedAuto extends CoreAuto {
+    public MyOpMode() {
+        super(
+            // Step 1: Register auto modules
+            modulesArrayOf(
+                Intake.INSTANCE,
+                Chassis.INSTANCE,
+                Spindexer.INSTANCE,
+                Outtake.INSTANCE
+            ),
+            // Step 2: Pass a command to run at init
+            initCommand,
+            // Step 3: And another to run when played
+            redAutoCommand,
+        );
+    }
+    // Done! You have your auto!
+}
+`;
+
+export const exampleUnitTestCode = `
+package org.firstinspires.ftc.teamcode;
+import ...
+public class IntakeTest extends TestOpMode {
+    public MyOpMode() {
+        super(Intake.INSTANCE);
+        // Just one module to get unit-tested!
+    }
+    ActionButton testAbsorb
+        = new ActionButton(
+            () -> gamepad1.cross,
+            Intake.INSTANCE.absorb,
+            ButtonState.WHEN_PRESSED
+        );
+    ActionButton testEject
+        = new ActionButton(
+            () -> gamepad1.circle,
+            Intake.INSTANCE.eject,
+            ButtonState.WHEN_PRESSED
+        );
+    // Those buttons automatically register
+    // commands when pressed!
+}
+`;
+export const gradleFileName = 'TeamCode/build.gradle';
+export const exampleFileName = 'MyOpMode.java';
+
+## Installation Guide & Features
+Add those lines to your `TeamCode/build.gradle` file, and then start using CoreControl in your code!
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 300px; margin-top: 0; display: flex; flex-direction: column; gap: 0.2rem;">
+        <Card title="Register once" icon="add-document">
+            This will register CoreControl as a dependency.
+            <Code code={gradleCode} lang="diff" title={gradleFileName} />
+        </Card>
+
+        <Card title="Complex logic, made simple" icon="star">
+            Not just commands. Reusable pieces of code with
+            <span style={{ color: 'var(--text-highlight)' }}>nesting</span>,
+            <span style={{ color: 'var(--text-highlight)' }}>virtual multi-threading</span> and
+            <span style={{ color: 'var(--text-highlight)' }}>looptime budgeting</span> support.
+            <Code code={exampleCommandsCode} lang="java"/>
+        </Card>
+
+        <Card title="Autonomous made easy" icon="rocket">
+            Write your autonomous routines as commands, and run them with
+            just a single line of code.
+            <Code code={exampleRedAutoCode} lang="java" meta="ins={3, 14, 16}"/>
+        </Card>
+    </div>
+
+    <div style="flex: 1; min-width: 300px; margin-top: 0; display: flex; flex-direction: column; gap: 0.2rem;">
+        <Card title="Use everywhere" icon="pencil">
+            You can start using CoreControl in your OpModes by extending `CoreTeleOp`, in which you can register
+            modules and commands.
+            <div style="max-width: 100%; overflow-x: auto;">
+                <Code code={exampleCode} lang="java" title={exampleFileName} meta="ins={3, 7-10, 17-20}"/>
+            </div>
+        </Card>
+
+        <Card title="Unit-testing trivialized" icon="magnifier">
+            Write unit tests for your modules with minimal boilerplate. Bind commands to buttons, and get a
+            fully functional test OpMode in 30 seconds and 10 or so lines of code.
+            <Code code={exampleUnitTestCode} lang="java" meta="ins={3, 8-9, 14-15}"/>
+        </Card>
+    </div>
+</div>
+<h1>From zero to working in <span style={{ color: 'var(--sl-color-accent)' }}>less than an hour</span>.</h1>
+<p>
+    Skip the boilerplate. With <span style={{ color: 'var(--sl-color-accent)' }}> CoreControl</span>, you can
+    code a fully functional robot from scratch in record time.
+</p>
+<LinkButton
+    href="/guides/example/"
+    variant="primary"
+    icon="external"
+    style="margin-top: 2rem;">
+    Check out the Docs
+</LinkButton>
