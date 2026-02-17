@@ -1,0 +1,83 @@
+---
+title: Writing Auto OpModes
+description: Learn how to write Autonomous OpModes in CoreControl.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Autonomous OpModes in CoreControl are structured around two main commands: an `initCommand` (runs during initialization) and a `startCommand` (runs when the match starts). This structure encourages a clean, command-based approach to autonomous programming.
+
+## Basic Structure
+
+To create an Autonomous OpMode, extend `CoreAuto`.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    @Autonomous(name = "Red Auto")
+    class RedAuto : CoreAuto(
+        // Register modules
+        modules = arrayOf(Drivetrain, Intake, Lift),
+
+        // Command to run during initialization
+        initCommand = instant {
+            Lift.resetEncoders()
+            Intake.closeClaw()
+        },
+
+        // Command to run when the match starts
+        startCommand = sequentially(
+            // Drive to position
+            DriveToPosition(10.0, 0.0),
+            // Score pixel
+            Lift.goToPosition(1000),
+            Intake.openClaw(),
+            wait(0.5),
+            Lift.goToPosition(0),
+            // Park
+            DriveToPosition(0.0, 24.0)
+        )
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @Autonomous(name = "Red Auto")
+    public class RedAuto extends CoreAuto {
+
+        public RedAuto() {
+            super(
+                // Register modules
+                new CoreModule[]{Drivetrain.INSTANCE, Intake.INSTANCE, Lift.INSTANCE},
+
+                // Command to run during initialization
+                new InstantCommand(() -> {
+                    Lift.INSTANCE.resetEncoders();
+                    Intake.INSTANCE.closeClaw();
+                }),
+
+                // Command to run when the match starts
+                sequentially(
+                    // Drive to position
+                    new DriveToPosition(10.0, 0.0),
+                    // Score pixel
+                    Lift.INSTANCE.goToPosition(1000),
+                    Intake.INSTANCE.openClaw(),
+                    wait(0.5),
+                    Lift.INSTANCE.goToPosition(0),
+                    // Park
+                    new DriveToPosition(0.0, 24.0)
+                )
+            );
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Key Concepts
+
+1.  **Init Command**: Use `initCommand` to perform setup tasks like resetting encoders, closing claws, or initializing vision pipelines. This command runs once when you press INIT.
+2.  **Start Command**: Use `startCommand` to define your main autonomous sequence. This command runs once when you press PLAY.
+3.  **Command Groups**: Use `sequentially`, `inParallel`, and `racing` to combine simple commands into complex behaviors.
+4.  **No Loop Logic**: Unlike TeleOp, you generally do not need to override `onMainLoop` in `CoreAuto`. The command scheduler handles everything for you.

@@ -32,7 +32,11 @@ export default defineConfig({
 				{
 					label: 'Guides',
 					items: [
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: '1. Installation', slug: 'guides/installation' },
+						{ label: '2. Basic Usage', slug: 'guides/basic-usage' },
+						{ label: '3. Modules & Commands', slug: 'guides/writing-modules-commands' },
+						{ label: '4. TeleOp OpModes', slug: 'guides/teleop-opmodes' },
+						{ label: '5. Auto OpModes', slug: 'guides/auto-opmodes' },
 					],
 				},
 				{

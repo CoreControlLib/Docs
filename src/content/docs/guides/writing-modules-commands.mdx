@@ -1,0 +1,128 @@
+---
+title: Writing Modules & Commands
+description: Learn how to write modules, submodules, and commands in CoreControl.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide will teach you how to create advanced modules, use submodules, and write custom commands, including command factories.
+
+## Modules & Submodules
+
+Modules can contain other modules, creating a hierarchy. This is useful for grouping related systems. For example, a `Robot` module can contain `Intake`, `Outtake`, and `Drivetrain` modules.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Robot : Module(Intake, Outtake, Drivetrain) {
+        // Robot module manages Intake, Outtake, and Drivetrain
+        // When you register Robot, all submodules are automatically registered!
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Robot extends Module {
+        public static final Robot INSTANCE = new Robot();
+
+        public Robot() {
+            super(Intake.INSTANCE, Outtake.INSTANCE, Drivetrain.INSTANCE);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Writing Commands
+
+Commands are reusable actions. You can define them as standalone classes or use helper functions.
+
+### Basic Commands
+
+You can write simple commands directly inside your modules.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Intake : Module() {
+        // ... (motor setup)
+
+        val absorb = instant { motor.power = 1.0 }
+        val eject = instant { motor.power = -1.0 }
+        val stop = instant { motor.power = 0.0 }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Intake extends Module {
+        // ... (motor setup)
+
+        public final InstantCommand absorb = new InstantCommand(() -> motor.setPower(1.0));
+        public final InstantCommand eject = new InstantCommand(() -> motor.setPower(-1.0));
+        public final InstantCommand stop = new InstantCommand(() -> motor.setPower(0.0));
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Command Factories
+
+Sometimes you need commands that take parameters, like "Go to position X". Instead of creating a new command class for every possible position, you can use a **Command Factory**.
+
+A command factory is simply a method that returns a new `Command` instance configured with the given parameters.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Lift : Module() {
+        // ... (motor setup)
+
+        fun goToPosition(targetPosition: Int): Command {
+            return instant {
+                motor.targetPosition = targetPosition
+                motor.mode = DcMotor.RunMode.RUN_TO_POSITION
+                motor.power = 1.0
+            }
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Lift extends Module {
+        // ... (motor setup)
+
+        public Command goToPosition(int targetPosition) {
+            return new InstantCommand(() -> {
+                motor.setTargetPosition(targetPosition);
+                motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                motor.setPower(1.0);
+            });
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+:::caution[Warning: Loop Flooding]
+Be careful when using command factories inside a loop! Every time you call `goToPosition(100)`, it creates a **new** command instance. If you call this every loop cycle (e.g., inside `onMainLoop`), you will flood the command scheduler with hundreds of identical commands per second, causing severe lag or crashes.
+
+**Do NOT do this:**
+```java
+// BAD! Creates a new command every loop!
+public void onMainLoop() {
+    if (gamepad1.a) {
+        Lift.INSTANCE.goToPosition(100).register();
+    }
+}
+```
+
+**Instead, use a trigger or check if it's already running:**
+```java
+// GOOD! Only registers once when the button is pressed.
+if (gamepad1.wasJustPressed(GamepadKeys.Button.A)) {
+    Lift.INSTANCE.goToPosition(100).register();
+}
+```
+:::

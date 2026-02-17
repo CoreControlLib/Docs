@@ -1,0 +1,137 @@
+---
+title: Basic Usage & Project Structure
+description: Learn how to structure your CoreControl project and get started with basic usage.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+CoreControl encourages a modular and organized project structure. This guide will show you how to set up your project and start using the library effectively.
+
+## Project Structure
+
+We recommend organizing your code by feature or subsystem. A common structure for an FTC robot project using CoreControl looks like this:
+
+```
+TeamCode/
+├── src/main/java/org/firstinspires/ftc/teamcode/
+│   ├── modules/              # Contains all your robot modules
+│   │   ├── Drivetrain.java   # Drivetrain module
+│   │   ├── Intake.java       # Intake module
+│   │   ├── Lift.java         # Lift module
+│   │   └── Robot.java        # Main Robot module (optional, for grouping)
+│   ├── commands/             # Contains custom commands (optional)
+│   │   ├── AutoDriveCommand.java
+│   │   └── ScorePixelCommand.java
+│   ├── opmodes/              # Contains your OpModes
+│   │   ├── TeleOp.java       # Main TeleOp
+│   │   └── AutoRed.java      # Autonomous OpMode
+│   └── utils/                # Utility classes
+```
+
+This structure keeps your code clean and easy to navigate. Each module is self-contained in its own file within the `modules` package.
+
+## Creating Your First Module
+
+Let's create a simple `Intake` module.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    package org.firstinspires.ftc.teamcode.modules
+
+    import com.andreidurlea.corecontrol.modulesFeature.Module
+    import com.qualcomm.robotcore.hardware.DcMotor
+
+    object Intake : Module() {
+        private lateinit var motor: DcMotor
+
+        override fun onInit() {
+            // hardwareMapEverywhere is globally available!
+            motor = hardwareMapEverywhere.get(DcMotor::class.java, "intake")
+        }
+
+        fun setPower(power: Double) {
+            motor.power = power
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    package org.firstinspires.ftc.teamcode.modules;
+
+    import com.andreidurlea.corecontrol.modulesFeature.Module;
+    import com.qualcomm.robotcore.hardware.DcMotor;
+    import com.andreidurlea.corecontrol.miscellaneous.GlobalObjects;
+
+    public class Intake extends Module {
+        public static final Intake INSTANCE = new Intake();
+        private DcMotor motor;
+
+        @Override
+        public void onInit() {
+            // hardwareMapEverywhere is globally available!
+            motor = GlobalObjects.hardwareMapEverywhere.get(DcMotor.class, "intake");
+        }
+
+        public void setPower(double power) {
+            motor.setPower(power);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Using Modules in an OpMode
+
+Now, let's use this module in a TeleOp OpMode.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    package org.firstinspires.ftc.teamcode.opmodes
+
+    import com.andreidurlea.corecontrol.opModesFeature.CoreTeleOp
+    import org.firstinspires.ftc.teamcode.modules.Intake
+
+    @TeleOp(name = "My TeleOp")
+    class MyTeleOp : CoreTeleOp(Intake) { // Register the module here!
+
+        override fun onMainLoop() {
+            if (gamepad1.a) {
+                Intake.setPower(1.0)
+            } else {
+                Intake.setPower(0.0)
+            }
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    package org.firstinspires.ftc.teamcode.opmodes;
+
+    import com.andreidurlea.corecontrol.opModesFeature.CoreTeleOp;
+    import org.firstinspires.ftc.teamcode.modules.Intake;
+
+    @TeleOp(name = "My TeleOp")
+    public class MyTeleOp extends CoreTeleOp {
+
+        public MyTeleOp() {
+            super(Intake.INSTANCE); // Register the module here!
+        }
+
+        @Override
+        public void onMainLoop() {
+            if (gamepad1.a) {
+                Intake.INSTANCE.setPower(1.0);
+            } else {
+                Intake.INSTANCE.setPower(0.0);
+            }
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+By registering `Intake` in the `CoreTeleOp` constructor, its `onInit` method is automatically called when you press INIT on the Driver Station. You don't need to manually initialize it!

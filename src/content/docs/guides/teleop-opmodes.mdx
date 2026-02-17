@@ -1,0 +1,93 @@
+---
+title: Writing TeleOp OpModes
+description: Learn how to write TeleOp OpModes in CoreControl.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+TeleOp OpModes are where you define the driver-controlled period of your robot. CoreControl simplifies this by handling module lifecycle and providing a clean structure.
+
+## Basic Structure
+
+To create a TeleOp OpMode, extend `CoreTeleOp`.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    @TeleOp(name = "My TeleOp")
+    class MyTeleOp : CoreTeleOp(
+        // Register modules here!
+        Drivetrain,
+        Intake,
+        Lift
+    ) {
+        // Define buttons
+        val grabButton = Button { gamepad1.a }
+        val shootButton = Button { gamepad1.b }
+
+        override fun onMainLoop() {
+            // This runs repeatedly while the OpMode is active
+
+            // Use button states
+            if (grabButton.pressed) {
+                Intake.toggleClaw()
+            }
+
+            if (shootButton.held) {
+                Outtake.shoot()
+            } else {
+                Outtake.stop()
+            }
+
+            // Drive control
+            Drivetrain.drive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x)
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @TeleOp(name = "My TeleOp")
+    public class MyTeleOp extends CoreTeleOp {
+
+        // Define buttons
+        Button grabButton = new Button(() -> gamepad1.a);
+        Button shootButton = new Button(() -> gamepad1.b);
+
+        public MyTeleOp() {
+            super(
+                // Register modules here!
+                Drivetrain.INSTANCE,
+                Intake.INSTANCE,
+                Lift.INSTANCE
+            );
+        }
+
+        @Override
+        public void onMainLoop() {
+            // This runs repeatedly while the OpMode is active
+
+            // Use button states
+            if (grabButton.getPressed()) {
+                Intake.INSTANCE.toggleClaw();
+            }
+
+            if (shootButton.getHeld()) {
+                Outtake.INSTANCE.shoot();
+            } else {
+                Outtake.INSTANCE.stop();
+            }
+
+            // Drive control
+            Drivetrain.INSTANCE.drive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Key Concepts
+
+1.  **Module Registration**: Pass your modules to the `CoreTeleOp` constructor. This ensures their `onInit`, `onStart`, and `onMainLoop` methods are called automatically.
+2.  **Button Handling**: Use `Button` and `AnalogButton` classes to handle gamepad input cleanly.
+3.  **Loop Logic**: Put your main control logic inside `onMainLoop`. This method is called repeatedly by the OpMode.
