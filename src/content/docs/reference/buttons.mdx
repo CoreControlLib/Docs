@@ -1,0 +1,162 @@
+---
+title: Buttons
+description: Reference documentation for CoreControl Buttons.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+CoreControl provides a powerful button system that wraps standard gamepad inputs to provide advanced features like toggle states, double-click detection, and hold duration tracking.
+
+## Overview
+
+The `Button` and `AnalogButton` classes allow you to treat gamepad inputs as objects with state. Instead of manually checking `if (gamepad1.a && !previousA)`, you can simply check `buttonA.pressed`.
+
+## Usage
+
+Buttons should be instantiated inside your OpMode. They automatically register themselves to be updated every loop.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    class MyOpMode : CoreTeleOp() {
+        // Define buttons
+        val grabButton = Button { gamepad1.a }
+        val shootButton = Button { gamepad1.b }
+        val triggerButton = AnalogButton { gamepad1.right_trigger }
+
+        override fun onMainLoop() {
+            // Use button states
+            if (grabButton.pressed) {
+                claw.toggle()
+            }
+
+            if (shootButton.held) {
+                shooter.spin(1.0)
+            } else {
+                shooter.spin(0.0)
+            }
+
+            if (triggerButton.pressed) {
+                // Trigger crossed the threshold
+            }
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class MyOpMode extends CoreTeleOp {
+        // Define buttons
+        Button grabButton = new Button(() -> gamepad1.a);
+        Button shootButton = new Button(() -> gamepad1.b);
+        AnalogButton triggerButton = new AnalogButton(() -> gamepad1.right_trigger);
+
+        @Override
+        public void onMainLoop() {
+            // Use button states
+            if (grabButton.getPressed()) {
+                claw.toggle();
+            }
+
+            if (shootButton.getHeld()) {
+                shooter.spin(1.0);
+            } else {
+                shooter.spin(0.0);
+            }
+
+            if (triggerButton.getPressed()) {
+                // Trigger crossed the threshold
+            }
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## API Reference
+
+### Button
+
+Wraps a digital input (boolean).
+
+**Properties:**
+*   `pressed`: True only on the frame the button was pressed.
+*   `released`: True only on the frame the button was released.
+*   `held`: True as long as the button is held down.
+*   `toggled`: Flips state (true/false) each time the button is pressed.
+*   `doublePressed`: True if the button is pressed twice within the double-click interval (default 300ms).
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    val myButton = Button { gamepad1.x }
+    if (myButton.doublePressed) {
+        // Handle double click
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    Button myButton = new Button(() -> gamepad1.x);
+    if (myButton.getDoublePressed()) {
+        // Handle double click
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### AnalogButton
+
+Wraps an analog input (float) and treats it as a button based on a threshold.
+
+**Properties:**
+*   Inherits all properties from `Button` (`pressed`, `held`, etc.).
+*   `value`: The raw float value of the input (0.0 to 1.0).
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    // Threshold defaults to 0.2, but can be customized
+    val trigger = AnalogButton({ gamepad1.right_trigger }, threshold = 0.5)
+
+    if (trigger.pressed) {
+        // Trigger passed 0.5
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    // Threshold defaults to 0.2, but can be customized
+    AnalogButton trigger = new AnalogButton(() -> gamepad1.right_trigger, 0.5);
+
+    if (trigger.getPressed()) {
+        // Trigger passed 0.5
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### ActionButton
+
+A specialized button that automatically registers a command when triggered.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    val launchButton = ActionButton(
+        button = { gamepad1.y },
+        commandToRun = LaunchDroneCommand(),
+        whenToTrigger = ButtonState.WHEN_DOUBLE_PRESSED
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    ActionButton launchButton = new ActionButton(
+        () -> gamepad1.y,
+        new LaunchDroneCommand(),
+        ButtonState.WHEN_DOUBLE_PRESSED
+    );
+    ```
+  </TabItem>
+</Tabs>

@@ -1,0 +1,126 @@
+---
+title: Utilities Everywhere
+description: Reference documentation for CoreControl utilities, including global objects, mathematical helpers, and debugging tools.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+CoreControl provides a collection of utility classes and functions designed to simplify common FTC programming tasks. This includes global access to SDK objects like `Telemetry` and `HardwareMap`, as well as mathematical helpers and debugging tools.
+
+## Global Objects
+
+CoreControl automatically injects common SDK objects into global variables when an OpMode starts. This allows you to access them from anywhere in your code—inside Modules, Commands, or utility classes—without passing them around as parameters.
+
+### HardwareMap
+
+Use `hardwareMapEverywhere` to initialize your hardware in your modules without passing the `hardwareMap` object around.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Intake : Module() {
+        private lateinit var motor: DcMotor
+
+        override fun onInit() {
+            // Access hardwareMap globally
+            motor = hardwareMapEverywhere.get(DcMotor::class.java, "intake")
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Intake extends Module {
+        private DcMotor motor;
+
+        @Override
+        public void onInit() {
+            // Access hardwareMap globally
+            motor = GlobalObjects.hardwareMapEverywhere.get(DcMotor.class, "intake");
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Telemetry
+
+Use `telemetryEverywhere` to send data to the Driver Station from anywhere in your code.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    fun someFunction() {
+        telemetryEverywhere.addData("Status", "Running")
+        // Note: You generally don't need to call update() manually,
+        // as the OpMode handles it.
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public void someFunction() {
+        GlobalObjects.telemetryEverywhere.addData("Status", "Running");
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Time
+
+Access the current time (since the start of the OpMode) globally.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    val currentTime = nowMs // Time in milliseconds
+    val currentTimeSeconds = nowS // Time in seconds
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    double currentTime = GlobalObjects.getNowMs();
+    double currentTimeSeconds = GlobalObjects.getNowS();
+    ```
+  </TabItem>
+</Tabs>
+
+## Helper Utilities
+
+CoreControl also provides some utility functions and classes to assist with common tasks.
+
+### Low Pass Filter
+
+A simple implementation of a low-pass filter for smoothing sensor data. This is useful for reducing noise in sensor readings.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    val filter = LowPassFilter(alpha = 0.5) // 0.0 to 1.0 (higher is smoother but more lag)
+    val smoothedValue = filter.filterValue(sensorInput)
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    LowPassFilter filter = new LowPassFilter(0.5);
+    double smoothedValue = filter.filterValue(sensorInput);
+    ```
+  </TabItem>
+</Tabs>
+
+### Global Sleep
+
+A wrapper around `Thread.sleep` that also logs a message to telemetry. This is useful for debugging or simple delays where blocking the thread is acceptable (e.g., during initialization).
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    globalSleep(1000, "Waiting for sensor initialization")
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    Utilities.globalSleep(1000, "Waiting for sensor initialization");
+    ```
+  </TabItem>
+</Tabs>

@@ -1,0 +1,66 @@
+---
+title: Motor Caching
+description: Reference documentation for CoreControl Motor Caching.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Motor Caching is a performance optimization feature in CoreControl. It reduces the number of unnecessary hardware write operations, which can significantly improve loop times, especially when using many motors or servos.
+
+## Overview
+
+In the FTC SDK, every time you set a motor's power or a servo's position, a command is sent to the hardware controller (Control Hub or Expansion Hub). This communication takes time. If you set the same power value repeatedly in a loop (e.g., `motor.power = 1.0` every loop), you are wasting valuable time sending redundant commands.
+
+CoreControl provides extension properties (`cachingPower`, `cachingPosition`) that check the current value before writing a new one. If the new value is effectively the same as the current one (within a small tolerance), the write operation is skipped.
+
+## Usage
+
+Simply replace `.power` with `.cachingPower` and `.position` with `.cachingPosition` in your code.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    // Instead of this:
+    motor.power = 1.0
+    servo.position = 0.5
+
+    // Use this:
+    motor.cachingPower = 1.0
+    servo.cachingPosition = 0.5
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    // Instead of this:
+    motor.setPower(1.0);
+    servo.setPosition(0.5);
+
+    // Use this:
+    Caching.setCachingPower(motor, 1.0);
+    Caching.setCachingPosition(servo, 0.5);
+    ```
+  </TabItem>
+</Tabs>
+
+## API Reference
+
+### DcMotor / DcMotorEx
+
+**Extension Property:** `cachingPower`
+
+*   **Type:** `Double`
+*   **Behavior:** Writes to `power` only if the new value differs from the current value by more than `0.009`. Always writes if the new value is exactly `0.0`.
+
+### Servo
+
+**Extension Property:** `cachingPosition`
+
+*   **Type:** `Double`
+*   **Behavior:** Writes to `position` only if the new value differs from the current value by more than `0.0009`.
+
+### CRServo
+
+**Extension Property:** `cachingPower`
+
+*   **Type:** `Double`
+*   **Behavior:** Writes to `power` only if the new value differs from the current value by more than `0.009`. Always writes if the new value is exactly `0.0`.

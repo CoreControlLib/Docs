@@ -1,0 +1,132 @@
+---
+title: Modules
+description: Reference documentation for CoreControl Modules.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Modules are the building blocks of your robot code in CoreControl. They encapsulate the logic for specific hardware components or subsystems (like a drivetrain, intake, or lift) and manage their own lifecycle.
+
+## Overview
+
+A `Module` is a class that defines the behavior of a specific part of your robot. By extending the `Module` class, you can implement standard lifecycle methods (`onInit`, `onMainLoop`, etc.) that are automatically called by the OpMode. This promotes a clean, modular architecture where each component is self-contained.
+
+Modules can also have **submodules**, allowing you to create hierarchical structures (e.g., a `SuperStructure` module containing `Intake` and `Outtake` modules).
+
+## Usage
+
+To create a module, extend the `Module` class and override the necessary lifecycle methods.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Intake : Module() {
+        private lateinit var motor: DcMotor
+
+        override fun onInit() {
+            // hardwareMapEverywhere is globally available
+            motor = hardwareMapEverywhere.get(DcMotor::class.java, "intakeMotor")
+        }
+
+        override fun onMainLoop() {
+            // Control logic
+            motor.power = if (gamepad1.a) 1.0 else 0.0
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Intake extends Module {
+        public static final Intake INSTANCE = new Intake();
+        private DcMotor motor;
+
+        @Override
+        public void onInit() {
+            // hardwareMapEverywhere is globally available
+            motor = hardwareMapEverywhere.get(DcMotor.class, "intakeMotor");
+        }
+
+        @Override
+        public void onMainLoop() {
+            // Control logic
+            if (gamepad1.a) {
+                motor.setPower(1.0);
+            } else {
+                motor.setPower(0.0);
+            }
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## API Reference
+
+### Module
+
+The `Module` class is the primary class you will use. It provides the lifecycle hooks that the OpMode calls.
+
+**Lifecycle Methods:**
+
+*   `onInit()`: Called once when the OpMode initializes. Use this to get hardware references from `hardwareMap`.
+*   `onInitLoop()`: Called repeatedly during the initialization phase.
+*   `onStart()`: Called once when the OpMode starts.
+*   `onMainLoop()`: Called repeatedly while the OpMode is active.
+*   `onStop()`: Called once when the OpMode stops.
+*   `telemetry()`: Override this to return a string that will be automatically displayed in the telemetry.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Lift : Module() {
+        override fun telemetry(): String {
+            return "Position: ${motor.currentPosition}"
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Lift extends Module {
+        @Override
+        public String telemetry() {
+            return "Position: " + motor.getCurrentPosition();
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Submodules
+
+Modules can contain other modules. This is useful for grouping related systems. When you register a parent module, all its submodules are automatically registered and their lifecycle methods are called.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    object Robot : Module(Intake, Outtake, Drivetrain) {
+        // Robot module manages Intake, Outtake, and Drivetrain
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class Robot extends Module {
+        public static final Robot INSTANCE = new Robot();
+
+        public Robot() {
+            super(Intake.INSTANCE, Outtake.INSTANCE, Drivetrain.INSTANCE);
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### CoreModule
+
+`CoreModule` is the sealed base class for `Module` and internal system modules. It handles the internal logic for recursion (calling lifecycle methods on submodules) and performance tracking (loop times). You generally won't interact with this directly unless you are digging into the library internals.
+
+**Properties:**
+*   `isBusy`: Indicates if a command requiring this module is currently running.
+*   `loopTimeMs`: The time taken for the last loop of this module (including submodules).

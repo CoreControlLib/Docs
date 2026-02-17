@@ -1,0 +1,171 @@
+---
+title: OpModes
+description: Reference documentation for CoreControl OpModes.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+OpModes in CoreControl are designed to reduce boilerplate and integrate seamlessly with the library's module and command systems. They handle the lifecycle of your robot's components automatically, allowing you to focus on the logic.
+
+## Overview
+
+CoreControl provides specialized OpMode classes that extend the standard SDK `OpMode`. These classes automatically manage:
+*   **Module Lifecycle**: Initialization, updates, and cleanup for all registered modules.
+*   **Command Scheduling**: Execution of commands with time-budgeting.
+*   **Telemetry**: Automatic reporting of module states and command execution.
+*   **Hardware Access**: Global access to `hardwareMap` and `telemetry`.
+
+## Usage
+
+To use a CoreControl OpMode, simply extend one of the provided base classes (`CoreTeleOp`, `CoreAuto`, etc.) and override the lifecycle methods (`onInit`, `onMainLoop`, etc.) instead of the standard `init` and `loop`.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    @TeleOp(name = "My TeleOp", group = "Main")
+    class MyTeleOp : CoreTeleOp(MyModule.INSTANCE) {
+        override fun onInit() {
+            // Initialization code
+        }
+
+        override fun onMainLoop() {
+            // Main loop logic
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @TeleOp(name = "My TeleOp", group = "Main")
+    public class MyTeleOp extends CoreTeleOp {
+        public MyTeleOp() {
+            super(MyModule.INSTANCE);
+        }
+
+        @Override
+        public void onInit() {
+            // Initialization code
+        }
+
+        @Override
+        public void onMainLoop() {
+            // Main loop logic
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## API Reference
+
+### CoreTeleOp
+
+`CoreTeleOp` is the standard base class for TeleOp modes. It disables command logging telemetry by default to ensure performance during matches.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    class MyTeleOp : CoreTeleOp(
+        // Register modules here
+        DriveTrain,
+        Intake
+    ) {
+        override fun onMainLoop() {
+            // Gamepad logic here
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    public class MyTeleOp extends CoreTeleOp {
+        public MyTeleOp() {
+            super(DriveTrain.INSTANCE, Intake.INSTANCE);
+        }
+
+        @Override
+        public void onMainLoop() {
+            // Gamepad logic here
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### CoreAuto
+
+`CoreAuto` is designed for Autonomous modes. Unlike TeleOp, it is structured around two main commands: an `initCommand` (runs during initialization) and a `startCommand` (runs when the match starts). You generally do not need to override loop methods in `CoreAuto`.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    @Autonomous
+    class MyAuto : CoreAuto(
+        modules = arrayOf(DriveTrain, Intake),
+        initCommand = CloseClawCommand(),
+        startCommand = SequentialCommandGroup(
+            DriveToPosition(),
+            ScorePixel()
+        )
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @Autonomous
+    public class MyAuto extends CoreAuto {
+        public MyAuto() {
+            super(
+                new CoreModule[]{DriveTrain.INSTANCE, Intake.INSTANCE}, // Modules
+                new CloseClawCommand(), // Init Command
+                new SequentialCommandGroup( // Start Command
+                    new DriveToPosition(),
+                    new ScorePixel()
+                )
+            );
+        }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### TestTeleOp
+
+`TestTeleOp` is a variant of `CoreTeleOp` with all telemetry features enabled by default, including command logging. This is useful for debugging but should be avoided in competition due to potential performance overhead.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    @TeleOp(group = "Test")
+    class DebugOpMode : TestTeleOp(DriveTrain) {
+        // Telemetry for commands and modules is enabled automatically
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    @TeleOp(group = "Test")
+    public class DebugOpMode extends TestTeleOp {
+        public DebugOpMode() {
+            super(DriveTrain.INSTANCE);
+        }
+        // Telemetry for commands and modules is enabled automatically
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### CoreOpMode
+
+`CoreOpMode` is an alias for `CoreTeleOp`. It provides the same functionality and can be used interchangeably if you prefer the name.
+
+### CoreInternalOpMode
+
+`CoreInternalOpMode` is the base class for all CoreControl OpModes. It extends the SDK's `OpMode` and implements the custom lifecycle hooks (`onInit`, `onStart`, `onMainLoop`, `onStop`). It also handles the global `hardwareMap` and `telemetry` injection.
+
+**Lifecycle Methods:**
+*   `onInit()`: Called once when INIT is pressed.
+*   `onInitLoop()`: Called repeatedly during the initialization phase.
+*   `onStart()`: Called once when PLAY is pressed.
+*   `onMainLoop()`: Called repeatedly during the active phase.
+*   `onStop()`: Called once when STOP is pressed.

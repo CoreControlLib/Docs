@@ -1,0 +1,280 @@
+---
+title: Commands
+description: Reference documentation for CoreControl Commands.
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Commands are reusable units of behavior in CoreControl. They encapsulate logic that can be started, executed over time, and stopped. Commands are the primary way to define robot actions, from simple motor movements to complex autonomous sequences.
+
+## Overview
+
+A `Command` is defined by three main lifecycle phases:
+1.  **onStart**: Executed once when the command begins.
+2.  **onLoop**: Executed repeatedly while the command is active.
+3.  **onStop**: Executed once when the command finishes or is interrupted.
+
+A command runs until its `shouldStop` condition returns `true`.
+
+## Usage
+
+You can create commands by instantiating the `Command` class or using the `lifecycle` helper function.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    // Using the helper function (Recommended)
+    val myCommand = lifecycle(
+        onStart = { motor.power = 1.0 },
+        onLoop = { /* continuous updates */ },
+        onStop = { motor.power = 0.0 },
+        shouldStop = { sensor.distance < 10.0 }
+    )
+
+    // Registering the command to run
+    myCommand.register()
+    // OR simply
+    myCommand()
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    // Using the helper function (Recommended)
+    Command myCommand = lifecycle(
+        () -> motor.setPower(1.0), // onStart
+        () -> {}, // onLoop
+        () -> motor.setPower(0.0), // onStop
+        () -> sensor.getDistance() < 10.0 // shouldStop
+    );
+
+    // Registering the command to run
+    myCommand.register();
+    // OR simply
+    myCommand.start();
+    ```
+  </TabItem>
+</Tabs>
+
+## Basic Commands
+
+### InstantCommand
+
+Executes a single action and finishes immediately.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    instant { servo.position = 1.0 }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    instant(() -> servo.setPosition(1.0));
+    ```
+  </TabItem>
+</Tabs>
+
+### TimedCommand
+
+Runs for a specified duration.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    withTiming(2.0, // seconds
+        onStart = { motor.power = 0.5 },
+        onStop = { motor.power = 0.0 }
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    withTiming(2.0, // seconds
+        () -> motor.setPower(0.5),
+        () -> {},
+        () -> motor.setPower(0.0)
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### WaitCommand
+
+Does nothing for a specified duration. Useful in sequences.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    wait(1.5) // seconds
+    // OR
+    wait(1500L) // milliseconds
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    wait(1.5); // seconds
+    // OR
+    wait(1500L); // milliseconds
+    ```
+  </TabItem>
+</Tabs>
+
+### WaitUntilCommand
+
+Waits until a condition is met.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    waitUntil { sensor.isPressed }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    waitUntil(() -> sensor.isPressed());
+    ```
+  </TabItem>
+</Tabs>
+
+## Command Groups
+
+Command groups allow you to combine multiple commands into complex behaviors.
+
+### SequentialCommandGroup
+
+Runs commands one after another.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    sequentially(
+        instant { closeClaw() },
+        wait(0.5),
+        withTiming(2.0, onStart = { liftUp() })
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    sequentially(
+        instant(() -> closeClaw()),
+        wait(0.5),
+        withTiming(2.0, () -> liftUp())
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### ParallelCommandGroup
+
+Runs commands simultaneously. Finishes when **all** commands finish.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    inParallel(
+        withTiming(2.0, onStart = { driveForward() }),
+        withTiming(1.0, onStart = { raiseLift() })
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    inParallel(
+        withTiming(2.0, () -> driveForward()),
+        withTiming(1.0, () -> raiseLift())
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### RacingCommandGroup
+
+Runs commands simultaneously. Finishes when **any** command finishes (cancelling the others).
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    racing(
+        DriveToTarget(),
+        wait(5.0) // Timeout after 5 seconds
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    racing(
+        new DriveToTarget(),
+        wait(5.0) // Timeout after 5 seconds
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### ConditionalCommandGroup
+
+Runs one of two commands based on a condition checked at runtime.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    chooseOne(
+        { sensor.hasObject },
+        ScoreObject(), // If true
+        SearchForObject() // If false
+    )
+
+    // OR
+
+    runIf(
+        { sensor.isTooClose },
+        StopMoving()
+    )
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    chooseOne(
+        () -> sensor.hasObject(),
+        new ScoreObject(), // If true
+        new SearchForObject() // If false
+    );
+
+    // OR
+
+    runIf(
+        () -> sensor.isTooClose(),
+        new StopMoving()
+    );
+    ```
+  </TabItem>
+</Tabs>
+
+### SelectCommandGroup
+
+Dynamically selects a command to run.
+
+<Tabs>
+  <TabItem label="Kotlin">
+    ```kotlin
+    select {
+        when (visionResult) {
+            LEFT -> GoLeft()
+            RIGHT -> GoRight()
+            else -> wait(1.0)
+        }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Java">
+    ```java
+    select(() -> {
+        switch (visionResult) {
+            case LEFT: return new GoLeft();
+            case RIGHT: return new GoRight();
+            default: return wait(1.0);
+        }
+    });
+    ```
+  </TabItem>
+</Tabs>
